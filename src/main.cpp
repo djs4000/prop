@@ -29,8 +29,8 @@ char hexaKeys[ROWS][COLS] = {
   {'*', '0', '#', 'D'}
 };
 
-byte rowPins[ROWS] = {14, 27, 26, 25}; 
-byte colPins[COLS] = {33, 32, 35, 34}; 
+byte rowPins[COLS] = {12, 14, 27, 26}; 
+byte colPins[ROWS] = {25, 33, 32, 18}; 
 
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
@@ -45,7 +45,7 @@ constexpr uint16_t kRetryDelayMs = 500;
 
 Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, kOledResetPin);
 
-void showStatus(const String &line1, const String &line2 = String())
+/*void showStatus(const String &line1, const String &line2 = String())
 {
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -55,7 +55,7 @@ void showStatus(const String &line1, const String &line2 = String())
         display.println(line2);
     }
     display.display();
-}
+}*/
 
 
 void updateDisplay(const String &line1=String(""), const String &line2 = String("")) {
@@ -88,14 +88,17 @@ void updateDisplay(const String &line1=String(""), const String &line2 = String(
     display.print(remainingTime);
     display.println("s");
     }
-    display.clearDisplay();
-    display.setCursor(12, 0);
+
+    //display wifi status
+
+
+    display.setCursor(0, 15);
     display.println(line1);
     if (line2.length() > 0)
     {
         display.println(line2);
     }
-    display.display();
+
 
 
 
@@ -155,11 +158,11 @@ void setup()
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.cp437(true);
-    showStatus("Initializing...", "Starting WiFi");
+    updateDisplay("Initializing...", "Starting WiFi");
 
     connectToWifi();
 
-    display.clearDisplay();
+    //display.clearDisplay();
     display.display();
 }
 
@@ -210,5 +213,5 @@ void loop()
   }
 
   // A small delay to keep the loop from running too fast if no keys are pressed
-  delay(50);
+  delay(100);
 }
