@@ -5,7 +5,7 @@
 // It is recommended to keep this file out of version control if it will store
 // real credentials. You can duplicate this file and add it to .gitignore once
 // populated.
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "Santiso"
+#define WIFI_PASSWORD "Diego@1986"
 
 #endif // WIFI_CONFIG_H
