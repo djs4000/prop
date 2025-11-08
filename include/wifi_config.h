@@ -6,6 +6,6 @@
 // real credentials. You can duplicate this file and add it to .gitignore once
 // populated.
 #define WIFI_SSID "Santiso"
-#define WIFI_PASSWORD "Diego@1986"
+#define WIFI_PASSWORD "diego@1986"
 
 #endif // WIFI_CONFIG_H
