@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <WiFi.h>
+#include <WebServer.h>
+#include <Preferences.h>
 #include <Adafruit_SSD1306.h>
 //keypad libraries
 #include <Keypad.h>
@@ -44,6 +46,92 @@ constexpr uint8_t kMaxConnectionAttempts = 20;
 constexpr uint16_t kRetryDelayMs = 500;
 
 Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, kOledResetPin);
+
+Preferences preferences;
+WebServer server(80);
+
+String endpointConfig;
+
+String htmlEscape(const String &input)
+{
+    String escaped;
+    escaped.reserve(input.length());
+    for (uint16_t i = 0; i < input.length(); ++i)
+    {
+        const char c = input.charAt(i);
+        switch (c)
+        {
+        case '&':
+            escaped += F("&amp;");
+            break;
+        case '<':
+            escaped += F("&lt;");
+            break;
+        case '>':
+            escaped += F("&gt;");
+            break;
+        case 39:
+            escaped += F("&#39;");
+            break;
+        case '"':
+            escaped += F("&quot;");
+            break;
+        default:
+            escaped += c;
+            break;
+        }
+    }
+    return escaped;
+}
+
+void sendConfigurationPage(const String &message = String())
+{
+    String html = F("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Device Configuration</title><style>body{font-family:Arial,sans-serif;margin:40px;}label{display:block;margin-bottom:8px;font-weight:bold;}input[type=text]{width:100%;max-width:480px;padding:8px;margin-bottom:12px;}button{padding:10px 16px;margin-right:10px;font-size:14px;cursor:pointer;}form{margin-bottom:20px;}p.status{color:green;}</style></head><body><h1>Device Configuration</h1>");
+    if (message.length() > 0)
+    {
+        html += F("<p class='status'>");
+        html += htmlEscape(message);
+        html += F("</p>");
+    }
+    html += F("<form method='POST' action='/save'><label for='endpoint'>Endpoint URL</label><input type='text' id='endpoint' name='endpoint' value='");
+    html += htmlEscape(endpointConfig);
+    html += F("' placeholder='https://example.com/api'><button type='submit'>Save</button></form><form method='POST' action='/restart'><button type='submit'>Restart Device</button></form></body></html>");
+    server.send(200, "text/html", html);
+}
+
+void handleRoot()
+{
+    sendConfigurationPage();
+}
+
+void handleSave()
+{
+    if (server.hasArg("endpoint"))
+    {
+        endpointConfig = server.arg("endpoint");
+        preferences.putString("endpoint", endpointConfig);
+        sendConfigurationPage(F("Configuration saved."));
+    }
+    else
+    {
+        server.send(400, "text/plain", "Missing endpoint parameter");
+    }
+}
+
+void handleRestart()
+{
+    server.send(200, "text/html", F("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>Restarting</title></head><body><h1>Device Restarting</h1><p>The device will restart to apply the new settings.</p></body></html>"));
+    delay(500);
+    ESP.restart();
+}
+
+void setupServer()
+{
+    server.on("/", HTTP_GET, handleRoot);
+    server.on("/save", HTTP_POST, handleSave);
+    server.on("/restart", HTTP_POST, handleRestart);
+    server.begin();
+}
 
 /*void showStatus(const String &line1, const String &line2 = String())
 {
@@ -145,6 +233,9 @@ void setup()
     Serial.begin(115200);
     while (!Serial) {}
 
+    preferences.begin("config", false);
+    endpointConfig = preferences.getString("endpoint", String());
+
     Wire.begin(kOledSdaPin, kOledSclPin);
     if (!display.begin(SSD1306_SWITCHCAPVCC, kOledI2cAddress))
     {
@@ -164,10 +255,14 @@ void setup()
 
     //display.clearDisplay();
     display.display();
+
+    setupServer();
 }
 
 void loop()
 {
+    server.handleClient();
+
     // Placeholder loop. Future functionality (LED control, touchscreen handling, etc.)
     // will be implemented here.
     if (WiFi.status() != WL_CONNECTED)
